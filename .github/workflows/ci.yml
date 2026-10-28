@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: gateter
+          POSTGRES_USER: gateter
+          POSTGRES_PASSWORD: gateter
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U gateter" --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgres://gateter:gateter@localhost:5432/gateter
+      DJANGO_SECRET_KEY: ci-only-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements/dev.txt
+      - run: ruff check . && ruff format --check .
+      - run: python manage.py makemigrations --check --dry-run
+      - run: python manage.py test
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verificar sintaxis de los módulos JS
+        run: find frontend/src -name '*.js' -print0 | xargs -0 -n1 node --check
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build y smoke test con docker compose
+        run: |
+          docker compose up --build -d --wait
+          curl --fail --silent http://localhost:8080/api/health/
+          curl --fail --silent http://localhost:8080/ | grep -q Gateter
+      - if: always()
+        run: docker compose down -v
