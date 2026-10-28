@@ -1,7 +1,3 @@
-/**
- * Punto de entrada del frontend: recupera la sesión, monta la navegación y
- * arranca el router.
- */
 import { getSession } from "./api/auth.js";
 import { mountNavbar } from "./components/navbar.js";
 import { mountSidebar } from "./components/sidebar.js";

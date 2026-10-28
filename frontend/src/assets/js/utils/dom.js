@@ -1,11 +1,3 @@
-/**
- * Pequeño helper para crear elementos de forma declarativa.
- *
- * Nunca se usa innerHTML con datos del usuario: el texto siempre se inserta
- * como nodos de texto, lo que previene XSS por construcción.
- *
- *   h("a", { href: "/x", class: "link", onClick: fn }, "texto", otroNodo)
- */
 export function h(tag, attrs = {}, ...children) {
   const el = document.createElement(tag);
 
