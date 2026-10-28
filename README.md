@@ -4,9 +4,9 @@
 
 Pequeña red social para amantes de los gatos donde cada usuario publica mensajes cortos llamados **maullidos** (máx. 140 caracteres).
 
-## 🌐 Demo en vivo
+## Demo en vivo
 
-**👉 https://gateter.onrender.com**
+**https://gateter.onrender.com**
 
 > Corre en el plan gratuito de Render. Si nadie la ha usado en los últimos 15 minutos,
 > **la primera carga puede tardar ~1 minuto** mientras el servidor despierta.
@@ -30,7 +30,7 @@ Pequeña red social para amantes de los gatos donde cada usuario publica mensaje
 
 ---
 
-## ✨ Funcionalidades
+##  Funcionalidades
 
 ### Requisitos de la prueba
 
@@ -54,7 +54,7 @@ Pequeña red social para amantes de los gatos donde cada usuario publica mensaje
 
 ---
 
-## 🧰 Stack
+## Stack
 
 | Capa | Tecnologías |
 | --- | --- |
@@ -66,7 +66,7 @@ Pequeña red social para amantes de los gatos donde cada usuario publica mensaje
 
 ---
 
-## 🚀 Ejecutar en local
+##  Ejecutar en local
 
 ### Con Docker (recomendado)
 
@@ -75,24 +75,10 @@ Requisitos: Docker 24+ con Docker Compose v2.
 ```bash
 git clone https://github.com/natalyvar/Gateter.git
 cd Gateter
-cp .env.example .env          # opcional: todos los valores tienen default
 docker compose up --build
 ```
 
-Abre **http://localhost:8080** 🎉
-
-Atajos con `make` (`make help` los lista todos):
-
-| Comando | Qué hace |
-| --- | --- |
-| `make up` | Construye y levanta la app en segundo plano |
-| `make logs` | Sigue los logs de todos los servicios |
-| `make test` | Corre los tests del backend contra PostgreSQL |
-| `make superuser` | Crea un superusuario para `/admin/` |
-| `make down` | Detiene los contenedores |
-| `make reset` | Borra contenedores **y** datos |
-
-> En Windows sin WSL, `make` no viene instalado: usa directamente los comandos `docker compose` equivalentes que aparecen en el `Makefile`.
+Abre **http://localhost:8080** 
 
 ### Sin Docker (solo backend)
 
@@ -109,7 +95,7 @@ El frontend necesita que `/api` esté en su mismo origen (cookies de sesión + C
 
 ---
 
-## 🏗️ Arquitectura
+## Arquitectura
 
 **Local (`docker-compose.yml`): un contenedor por proceso**
 
@@ -136,7 +122,7 @@ Render ejecuta un solo contenedor por servicio, por eso en producción ambos pro
 
 ---
 
-## 📁 Estructura del proyecto
+## Estructura del proyecto
 
 ```
 gateter/
@@ -146,7 +132,6 @@ gateter/
 ├── render.yaml                     # infraestructura en Render (Blueprint)
 ├── deploy/render/                  # nginx.conf y start.sh de producción
 ├── docs/DEPLOY.md                  # guía de despliegue paso a paso
-├── Makefile · .env.example
 │
 ├── backend/
 │   ├── config/                     # settings (12-factor), urls, wsgi
@@ -181,7 +166,7 @@ gateter/
 
 ---
 
-## 🔌 API REST
+## API REST
 
 | Método | Ruta | Auth | Descripción |
 | --- | --- | --- | --- |
@@ -208,7 +193,7 @@ Los errores de validación incluyen además `fields` (p. ej. `{"content": ["Máx
 
 ---
 
-## 🔄 CI/CD
+## CI/CD
 
 ```
  git push
@@ -249,25 +234,9 @@ Detalles de mantenimiento:
 - Render no envía tráfico a la nueva versión hasta que `/api/health/` responde. Si el despliegue falla, la versión anterior sigue sirviendo.
 - `deploy/render/start.sh` aplica las migraciones y arranca Nginx y Gunicorn. Si cualquiera muere, detiene el contenedor para que Render lo reinicie.
 
-| Acción | ¿Corre el CI? | ¿Se despliega? |
-| --- | --- | --- |
-| Push a `main` | ✅ | ✅ si el CI pasa |
-| Push a otra rama | ✅ | ❌ |
-| Pull request | ✅ | ❌ |
-| Merge a `main` | ✅ | ✅ si el CI pasa |
 
-📘 Guía completa de configuración en Render: **[docs/DEPLOY.md](docs/DEPLOY.md)**.
+Guía completa de configuración en Render: **[docs/DEPLOY.md](docs/DEPLOY.md)**.
 
----
-
-## 🧪 Tests
-
-```bash
-make test                          # con Docker, contra PostgreSQL
-# o, sin Docker:
-cd backend && DJANGO_DEBUG=1 python manage.py test
-ruff check . && ruff format --check .
-```
 
 **46 tests de backend**, organizados por área:
 
@@ -283,7 +252,7 @@ Además, los flujos completos de la interfaz se verificaron con **Playwright** (
 
 ---
 
-## 🧠 Decisiones técnicas
+## Decisiones técnicas
 
 **Backend y frontend desacoplados, mismo origen.** Django expone solo una API JSON y el frontend es un SPA estático. Nginx sirve ambos bajo el mismo dominio: se separan responsabilidades sin pagar el coste de CORS.
 
@@ -299,7 +268,7 @@ Además, los flujos completos de la interfaz se verificaron con **Playwright** (
 
 **Editar sin engañar.** `edited_at` solo se marca si el texto cambió de verdad, y la tarjeta muestra *"editado"* con la fecha exacta al pasar el cursor.
 
-**Conteo de caracteres coherente.** El frontend cuenta *code points*, igual que `len()` en Python: un 😺 cuenta 1, no 2 como `String.length`.
+**Conteo de caracteres coherente.** El frontend cuenta *code points*, igual que `len()` en Python: un cuenta 1, no 2 como `String.length`.
 
 **Frontend sin framework ni build.** Módulos ES nativos, un router propio con History API y un helper `h()` para crear DOM. La lista de maullidos (`timeline`) y la tarjeta (`meowCard`) son componentes reutilizados en Inicio y en el perfil. Las vistas reciben un `AbortSignal` que se cancela al navegar, sin peticiones huérfanas.
 
@@ -309,7 +278,7 @@ Además, los flujos completos de la interfaz se verificaron con **Playwright** (
 
 ---
 
-## 🔒 Seguridad
+## Seguridad
 
 - **Contraseñas:** validadores de Django (longitud, comunes, numéricas, similares al usuario).
 - **CSRF:** obligatorio en todas las escrituras, incluidos login y registro (evita *login CSRF*).
@@ -323,7 +292,7 @@ Además, los flujos completos de la interfaz se verificaron con **Playwright** (
 
 ---
 
-## ⚙️ Variables de entorno
+## Variables de entorno
 
 Todas tienen un valor por defecto pensado para desarrollo local (ver [`.env.example`](.env.example)).
 
@@ -343,7 +312,7 @@ En Render, `RENDER_EXTERNAL_HOSTNAME` se agrega automáticamente a los hosts per
 
 ---
 
-## 🔮 Qué mejoraría con más tiempo
+## Qué mejoraría con más tiempo
 
 - **Tests E2E en el CI** con Playwright: hoy se ejecutan en local, no en el pipeline.
 - **Seguir usuarios**, con un feed solo de las cuentas que sigues, además de likes y respuestas.
