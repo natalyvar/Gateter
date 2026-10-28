@@ -12,7 +12,7 @@ from apps.meows.services import create_meow
 
 
 class CreateMeowTests(BaseAPITestCase):
-    url = reverse("meow-create")
+    url = reverse("meow-list")
 
     def setUp(self):
         super().setUp()

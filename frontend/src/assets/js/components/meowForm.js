@@ -1,37 +1,29 @@
 import { ApiError } from "../api/client.js";
 import { createMeow } from "../api/meows.js";
 import { h } from "../utils/dom.js";
-import { countChars } from "../utils/text.js";
+import { charCounter } from "./charCounter.js";
 import { showToast } from "./toast.js";
 
-export const MAX_LENGTH = 140;
-const WARNING_THRESHOLD = 20;
+let uid = 0;
 
 /**
  * Formulario para publicar un maullido.
- * @param {{onCreated: (meow: object) => void}} options
+ * @param {{onCreated: (meow: object) => void, placeholder?: string}} options
  */
-export function meowForm({ onCreated }) {
+export function meowForm({ onCreated, placeholder = "¿Qué estás maullando hoy?" }) {
+  const id = `meow-content-${++uid}`;
   const textarea = h("textarea", {
-    id: "meow-content",
+    id,
     name: "content",
     class: "composer__input",
     rows: 3,
-    placeholder: "¿Qué estás maullando hoy?",
-    "aria-describedby": "meow-counter",
+    placeholder,
     required: true,
   });
-  const counter = h("span", { id: "meow-counter", class: "composer__counter", "aria-live": "polite" });
   const submit = h("button", { type: "submit", class: "btn btn--primary" }, "Maullar");
-
-  function refresh() {
-    const length = countChars(textarea.value);
-    const remaining = MAX_LENGTH - length;
-    counter.textContent = String(remaining);
-    counter.classList.toggle("composer__counter--warn", remaining <= WARNING_THRESHOLD && remaining >= 0);
-    counter.classList.toggle("composer__counter--over", remaining < 0);
-    submit.disabled = length === 0 || remaining < 0;
-  }
+  const counter = charCounter(textarea, (valid) => (submit.disabled = !valid));
+  textarea.setAttribute("aria-describedby", `${id}-counter`);
+  counter.element.id = `${id}-counter`;
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -48,7 +40,7 @@ export function meowForm({ onCreated }) {
       showToast(message, { type: "error" });
     } finally {
       submit.textContent = "Maullar";
-      refresh();
+      counter.refresh();
       textarea.focus();
     }
   }
@@ -57,16 +49,13 @@ export function meowForm({ onCreated }) {
   textarea.addEventListener("keydown", (event) => {
     if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) form.requestSubmit();
   });
-  textarea.addEventListener("input", refresh);
 
   const form = h(
     "form",
     { class: "composer card", onSubmit: handleSubmit, novalidate: true },
-    h("label", { for: "meow-content", class: "visually-hidden" }, "Nuevo maullido"),
+    h("label", { for: id, class: "visually-hidden" }, "Nuevo maullido"),
     textarea,
-    h("div", { class: "composer__footer" }, counter, submit),
+    h("div", { class: "composer__footer" }, counter.element, submit),
   );
-
-  refresh();
   return form;
 }

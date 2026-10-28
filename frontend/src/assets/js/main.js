@@ -8,7 +8,7 @@ import { mountSidebar } from "./components/sidebar.js";
 import { showToast } from "./components/toast.js";
 import { defineRoutes, startRouter } from "./router.js";
 import { setUser } from "./state/session.js";
-import { homeView } from "./views/home.js";
+import { feedView } from "./views/feed.js";
 import { loginView } from "./views/login.js";
 import { notFoundView } from "./views/notFound.js";
 import { profileView } from "./views/profile.js";
@@ -16,7 +16,7 @@ import { registerView } from "./views/register.js";
 
 defineRoutes(
   [
-    { path: "/", view: homeView },
+    { path: "/", view: feedView },
     { path: "/login", view: loginView },
     { path: "/registro", view: registerView },
     { path: "/usuarios/:username", view: profileView },

@@ -3,11 +3,9 @@ import { authForm } from "../components/authForm.js";
 import { navigate } from "../router.js";
 import { getUser, setUser } from "../state/session.js";
 import { h } from "../utils/dom.js";
-import { profilePath } from "./paths.js";
 
 export function loginView(outlet) {
-  const user = getUser();
-  if (user) return navigate(profilePath(user.username), { replace: true });
+  if (getUser()) return navigate("/", { replace: true });
 
   document.title = "Entrar · Gateter";
   outlet.append(
@@ -28,7 +26,7 @@ export function loginView(outlet) {
       onSubmit: async ({ username, password }) => {
         const data = await login(username.trim(), password);
         setUser(data.user);
-        navigate(profilePath(data.user.username));
+        navigate("/");
       },
       footer: h("span", {}, "¿Aún no tienes cuenta? ",
         h("a", { href: "/registro", dataset: { link: "" } }, "Regístrate")),

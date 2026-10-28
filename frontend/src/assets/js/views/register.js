@@ -4,13 +4,11 @@ import { showToast } from "../components/toast.js";
 import { navigate } from "../router.js";
 import { getUser, setUser } from "../state/session.js";
 import { h } from "../utils/dom.js";
-import { profilePath } from "./paths.js";
 
 const USERNAME_RE = /^[A-Za-z0-9_]{3,30}$/;
 
 export function registerView(outlet) {
-  const user = getUser();
-  if (user) return navigate(profilePath(user.username), { replace: true });
+  if (getUser()) return navigate("/", { replace: true });
 
   document.title = "Crear cuenta · Gateter";
   outlet.append(
@@ -49,7 +47,7 @@ export function registerView(outlet) {
         const data = await register(username.trim(), password);
         setUser(data.user);
         showToast(`¡Bienvenido/a, @${data.user.username}! 😺`, { type: "success" });
-        navigate(profilePath(data.user.username));
+        navigate("/");
       },
       footer: h("span", {}, "¿Ya tienes cuenta? ", h("a", { href: "/login", dataset: { link: "" } }, "Entra")),
     }),

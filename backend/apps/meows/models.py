@@ -16,6 +16,7 @@ class Meow(models.Model):
     )
     content = models.CharField("contenido", max_length=MEOW_MAX_LENGTH)
     created_at = models.DateTimeField("creado", default=timezone.now, editable=False)
+    edited_at = models.DateTimeField("editado", null=True, blank=True, editable=False)
 
     class Meta:
         verbose_name = "maullido"
@@ -24,6 +25,8 @@ class Meow(models.Model):
         indexes = [
             # Cubre la consulta principal: maullidos de un autor, más recientes primero.
             models.Index(fields=["author", "-created_at", "-id"], name="meow_author_recent_idx"),
+            # Cubre el feed global (todos los maullidos, más recientes primero).
+            models.Index(fields=["-created_at", "-id"], name="meow_recent_idx"),
         ]
         constraints = [
             models.CheckConstraint(condition=~models.Q(content=""), name="meow_content_not_empty"),

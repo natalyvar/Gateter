@@ -1,7 +1,6 @@
 import { getProfile, listMeows } from "../api/users.js";
-import { meowCard } from "../components/meowCard.js";
 import { meowForm } from "../components/meowForm.js";
-import { showToast } from "../components/toast.js";
+import { timeline } from "../components/timeline.js";
 import { isOwner, subscribe } from "../state/session.js";
 import { h } from "../utils/dom.js";
 import { presenceLabel } from "../utils/presence.js";
@@ -40,7 +39,8 @@ function profileHeader(profile) {
         count, " maullidos · en Gateter desde ", formatMonthYear(profile.date_joined)),
     ),
   );
-  return { header, incrementCount: () => (count.textContent = String(Number(count.textContent) + 1)) };
+  const addToCount = (delta) => (count.textContent = String(Number(count.textContent) + delta));
+  return { header, addToCount };
 }
 
 export async function profileView(outlet, { params, signal }) {
@@ -66,45 +66,27 @@ export async function profileView(outlet, { params, signal }) {
 
   document.title = `@${profile.username} · Gateter`;
 
-  const { header, incrementCount } = profileHeader(profile);
-  const list = h("div", { class: "timeline", "aria-live": "polite" });
-  const emptyTimeline = h("p", { class: "timeline__empty" },
-    isOwner(profile.username) ? "Aún no has maullado. ¡Estrena tu perfil! 🐾" : "Este gato todavía no ha maullado.");
-  const composerSlot = h("div");
-
-  // --- Timeline con paginación "cargar más" -------------------------------
-  let nextCursor = page.next;
-  const loadMore = h("button", { type: "button", class: "btn btn--ghost btn--block" }, "Cargar más maullidos");
-
-  function appendMeows(meows) {
-    list.append(...meows.map((meow) => meowCard(meow)));
-    loadMore.hidden = !nextCursor;
-    emptyTimeline.hidden = list.childElementCount > 0;
-  }
-
-  loadMore.addEventListener("click", async () => {
-    loadMore.disabled = true;
-    try {
-      const next = await listMeows(profile.username, { cursor: nextCursor, signal });
-      nextCursor = next.next;
-      appendMeows(next.results);
-    } catch (error) {
-      if (!signal.aborted) showToast(error.message, { type: "error" });
-    } finally {
-      loadMore.disabled = false;
-    }
+  const { header, addToCount } = profileHeader(profile);
+  const meows = timeline({
+    fetchPage: (cursor) => listMeows(profile.username, { cursor, signal }),
+    emptyText: isOwner(profile.username)
+      ? "Aún no has maullado. ¡Estrena tu perfil! 🐾"
+      : "Este gato todavía no ha maullado.",
+    signal,
+    onDeleted: () => addToCount(-1),
   });
 
-  // --- Compositor: solo en el perfil propio --------------------------------
+  // Compositor: solo en el perfil propio (requisito de la prueba).
+  const composerSlot = h("div");
   function renderComposer() {
-    composerSlot.hidden = !isOwner(profile.username);
+    const own = isOwner(profile.username);
+    composerSlot.hidden = !own;
     composerSlot.replaceChildren(
-      isOwner(profile.username)
+      own
         ? meowForm({
             onCreated: (meow) => {
-              list.prepend(meowCard(meow, { isNew: true }));
-              emptyTimeline.hidden = true;
-              incrementCount();
+              meows.prepend(meow);
+              addToCount(1);
             },
           })
         : "",
@@ -114,6 +96,6 @@ export async function profileView(outlet, { params, signal }) {
   const unsubscribe = subscribe(renderComposer);
   signal.addEventListener("abort", unsubscribe, { once: true });
 
-  outlet.replaceChildren(header, composerSlot, emptyTimeline, list, loadMore);
-  appendMeows(page.results);
+  outlet.replaceChildren(header, composerSlot, meows.element);
+  meows.render(page);
 }

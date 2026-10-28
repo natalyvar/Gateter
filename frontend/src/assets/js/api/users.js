@@ -1,4 +1,5 @@
 import { request } from "./client.js";
+import { cursorQuery, extractCursor } from "./pagination.js";
 
 const encode = (username) => encodeURIComponent(username);
 
@@ -23,16 +24,6 @@ export const getProfile = (username, { signal } = {}) =>
  * @returns {Promise<{results: object[], next: string | null}>}
  */
 export async function listMeows(username, { cursor = null, signal } = {}) {
-  const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
-  const page = await request(`/users/${encode(username)}/meows/${query}`, { signal });
+  const page = await request(`/users/${encode(username)}/meows/${cursorQuery(cursor)}`, { signal });
   return { results: page.results, next: extractCursor(page.next) };
-}
-
-/**
- * DRF devuelve la URL absoluta de la página siguiente; solo nos interesa el
- * cursor, así no dependemos del host/puerto que vea el backend tras el proxy.
- */
-function extractCursor(nextUrl) {
-  if (!nextUrl) return null;
-  return new URL(nextUrl, window.location.origin).searchParams.get("cursor");
 }

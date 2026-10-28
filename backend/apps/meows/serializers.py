@@ -12,11 +12,13 @@ class MeowSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Meow
-        fields = ("id", "author", "content", "created_at")
-        read_only_fields = ("id", "author", "created_at")
+        fields = ("id", "author", "content", "created_at", "edited_at")
+        read_only_fields = ("id", "author", "created_at", "edited_at")
 
 
-class MeowCreateSerializer(serializers.Serializer):
+class MeowWriteSerializer(serializers.Serializer):
+    """Entrada para crear o editar un maullido."""
+
     content = serializers.CharField(
         max_length=MEOW_MAX_LENGTH,
         allow_blank=False,
