@@ -4,7 +4,16 @@ Pequeña red social para amantes de los gatos donde cada usuario publica mensaje
 
 - **Backend:** Python 3.12 · Django 5.1 · Django REST Framework · PostgreSQL 16 · Gunicorn
 - **Frontend:** HTML + CSS + JavaScript puro (módulos ES, sin build), servido por Nginx
-- **Infra:** Docker Compose (3 servicios), health checks, CI en GitHub Actions
+- **Infra:** Docker Compose (3 servicios), health checks, CI en GitHub Actions, CD a Render
+
+## 🌐 Demo en vivo
+
+**👉 https://TU-SERVICIO.onrender.com** <!-- reemplaza con tu URL de Render -->
+
+> Está en el plan gratuito de Render: si nadie la ha usado en los últimos 15 minutos,
+> **la primera carga puede tardar ~1 minuto** mientras el servidor despierta.
+
+Cada push a `main` que pasa el CI se despliega automáticamente. Ver [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ![Columna de usuarios](docs/screenshots/07-columna-usuarios.png)
 
@@ -77,6 +86,8 @@ Solo el puerto del frontend se publica; backend y BD viven en una red interna.
 ```
 gateter/
 ├── docker-compose.yml · Makefile · .env.example · .github/workflows/ci.yml
+├── render.yaml · Dockerfile.render · deploy/render/   # producción (Render)
+├── docs/DEPLOY.md                                    # guía de despliegue
 ├── backend/
 │   ├── config/               # settings (12-factor), urls raíz, wsgi
 │   ├── docker/               # entrypoint (migraciones) y gunicorn.conf.py
@@ -91,7 +102,7 @@ gateter/
 │           ├── views.py        → HTTP fino: orquesta serializer + service
 │           └── tests/
 └── frontend/
-    ├── nginx/default.conf    # SPA fallback, proxy, cabeceras de seguridad (CSP)
+    ├── nginx/default.conf.template  # SPA fallback, proxy, CSP (compartida local/producción)
     └── src/
         ├── index.html
         └── assets/
@@ -159,6 +170,8 @@ En todas las páginas, la **columna izquierda** lista a los usuarios (conectados
 **Seguridad adicional.** Throttling en login/registro (10/min) y publicación (30/min), validadores de contraseña de Django, mensaje de login genérico (no revela si el usuario existe), CSP estricta, `X-Frame-Options: DENY`, `nosniff`, contenedores sin root.
 
 **Docker.** Imagen multi-stage con virtualenv, `collectstatic` en build, migraciones en el entrypoint, Gunicorn como servidor WSGI, *health checks* en los tres servicios y `depends_on: service_healthy` para un arranque ordenado sin scripts de espera. Configuración 100 % por variables de entorno.
+
+**CD gateado por el CI.** En Render, `autoDeployTrigger: checksPass` hace que solo se despliegue un commit de `main` cuando todos los jobs de GitHub Actions están en verde, incluido uno que construye y prueba la imagen de producción simulando el entorno de Render. Así no hace falta guardar tokens en GitHub. Render ejecuta un contenedor por servicio, por lo que `Dockerfile.render` une Nginx y Gunicorn en una imagen sin root, reutilizando la **misma plantilla de Nginx** que el entorno local. Si uno de los dos procesos muere, el contenedor se detiene para que la plataforma lo reinicie. Detalles en [docs/DEPLOY.md](docs/DEPLOY.md).
 
 **UX.** Redirección automática al perfil tras registrarse, validación local antes de llamar a la API, errores por campo, contador con aviso a los 20 restantes, `Ctrl/Cmd + Enter` para publicar, *skeleton* de carga, toasts, modo oscuro automático, diseño responsive y atención a accesibilidad (labels, `aria-live`, foco gestionado, *skip link*, `prefers-reduced-motion`).
 

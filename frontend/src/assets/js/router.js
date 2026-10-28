@@ -1,3 +1,15 @@
+/**
+ * Router mínimo basado en la History API.
+ *
+ * Cada ruta asocia un patrón ("/usuarios/:username") a una vista:
+ *   view(outlet, { params, signal })
+ * El `signal` se aborta al navegar a otra ruta, de modo que las vistas pueden
+ * cancelar peticiones en curso y limpiar suscripciones sin fugas de memoria.
+ *
+ * En cada navegación se emite el evento `routechange` en window para que
+ * componentes persistentes (p. ej. la columna de usuarios) reaccionen.
+ */
+
 const routes = [];
 let outlet = null;
 let controller = null;

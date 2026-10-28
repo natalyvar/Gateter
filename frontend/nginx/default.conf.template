@@ -1,0 +1,74 @@
+# Plantilla compartida por los dos despliegues:
+#   - docker compose: la imagen oficial de nginx la procesa al arrancar
+#     (NGINX_PORT=80, BACKEND_UPSTREAM=backend:8000).
+#   - Render (Dockerfile.render): start.sh la procesa con envsubst
+#     (NGINX_PORT=$PORT, BACKEND_UPSTREAM=127.0.0.1:8000).
+# Solo se sustituyen esas dos variables; las de nginx ($host, $uri…) se respetan.
+
+upstream django {
+    server ${BACKEND_UPSTREAM};
+}
+
+# Si hay un proxy TLS delante (Render, Cloudflare…), conserva el esquema
+# original para que Django sepa que la petición llegó por HTTPS.
+map $http_x_forwarded_proto $forwarded_proto {
+    default $http_x_forwarded_proto;
+    ""      $scheme;
+}
+
+server {
+    listen ${NGINX_PORT};
+    server_name _;
+    server_tokens off;
+
+    root /usr/share/nginx/html;
+    client_max_body_size 1m;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+
+    # --- Health check de la API ------------------------------------------
+    # Las plataformas (Render, balanceadores) pueden sondear con un Host
+    # interno que Django rechazaría (ALLOWED_HOSTS). Se fija uno permitido.
+    location = /api/health/ {
+        access_log off;
+        proxy_pass http://django;
+        proxy_set_header Host 127.0.0.1;
+    }
+
+    # --- API y admin de Django -------------------------------------------
+    location ~ ^/(api|admin|static)/ {
+        proxy_pass http://django;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
+        proxy_read_timeout 30s;
+    }
+
+    # --- Health check del propio Nginx -----------------------------------
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok";
+    }
+
+    # --- Assets ------------------------------------------------------------
+    # Los archivos no llevan hash en el nombre, así que el navegador debe
+    # revalidar siempre (ETag → 304 si no cambiaron) para no servir JS viejo.
+    location /assets/ {
+        add_header Cache-Control "no-cache";
+        add_header X-Content-Type-Options "nosniff" always;
+        try_files $uri =404;
+    }
+
+    # --- SPA: cualquier otra ruta (/usuarios/x, /login…) sirve index.html -
+    location / {
+        add_header Cache-Control "no-cache";
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+        try_files $uri /index.html;
+    }
+}

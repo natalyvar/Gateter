@@ -1,3 +1,9 @@
+/**
+ * Estado global mínimo: el usuario autenticado.
+ * Patrón observable sencillo para que la barra de navegación y las vistas
+ * reaccionen a login/logout sin depender de un framework.
+ */
+
 let currentUser = null;
 const listeners = new Set();
 

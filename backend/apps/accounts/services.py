@@ -1,3 +1,5 @@
+"""Lógica de negocio de cuentas (capa de 'services')."""
+
 from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
 

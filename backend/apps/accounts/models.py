@@ -5,6 +5,7 @@ from django.db.models.functions import Lower
 
 class GateterUserManager(UserManager):
     def get_by_natural_key(self, username):
+        # Login insensible a mayúsculas: "Michi" y "michi" son el mismo usuario.
         return self.get(**{f"{self.model.USERNAME_FIELD}__iexact": username})
 
 

@@ -1,0 +1,54 @@
+# Imagen de producción "todo en uno" para plataformas PaaS (Render).
+#
+# Render ejecuta un solo contenedor por servicio y le asigna un puerto ($PORT),
+# así que aquí conviven Nginx (frontend + proxy) y Gunicorn (API) en la misma
+# imagen. Para desarrollo local se sigue usando docker-compose.yml, con un
+# contenedor por proceso. Ambas variantes comparten código y configuración.
+
+# ---------- Etapa 1: dependencias de Python ----------
+FROM python:3.12-slim AS builder
+
+ENV PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+COPY backend/requirements/ /tmp/requirements/
+RUN pip install -r /tmp/requirements/base.txt
+
+# ---------- Etapa 2: runtime ----------
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/opt/venv/bin:$PATH" \
+    DJANGO_SETTINGS_MODULE=config.settings \
+    GUNICORN_BIND=127.0.0.1:8000 \
+    GUNICORN_WORKERS=2 \
+    BACKEND_UPSTREAM=127.0.0.1:8000 \
+    PORT=10000
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends nginx-light gettext-base \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system app && useradd --system --gid app --home /app app \
+    && mkdir -p /tmp/nginx && chown app:app /tmp/nginx
+
+WORKDIR /app/backend
+COPY --from=builder /opt/venv /opt/venv
+COPY --chown=app:app backend/ /app/backend/
+COPY --chown=app:app frontend/src/ /usr/share/nginx/html/
+COPY --chown=app:app frontend/nginx/default.conf.template /app/deploy/default.conf.template
+COPY --chown=app:app deploy/render/nginx.conf deploy/render/start.sh /app/deploy/
+
+RUN DJANGO_SECRET_KEY=build-only python manage.py collectstatic --noinput \
+    && chmod +x /app/deploy/start.sh
+
+USER app
+EXPOSE 10000
+
+HEALTHCHECK --interval=15s --timeout=3s --start-period=30s --retries=5 \
+  CMD python -c "import os,urllib.request,sys; sys.exit(0 if urllib.request.urlopen(f'http://127.0.0.1:{os.environ[\"PORT\"]}/api/health/', timeout=2).status == 200 else 1)"
+
+CMD ["/app/deploy/start.sh"]

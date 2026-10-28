@@ -1,7 +1,10 @@
 FROM nginx:1.27-alpine
 
-# Configuración del servidor: estáticos del SPA + proxy inverso hacia Django.
-COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+# La imagen oficial procesa /etc/nginx/templates/*.template con envsubst al
+# arrancar y genera /etc/nginx/conf.d/default.conf.
+ENV NGINX_PORT=80 \
+    BACKEND_UPSTREAM=backend:8000
+COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY src/ /usr/share/nginx/html/
 
 EXPOSE 80

@@ -10,6 +10,7 @@ const UNITS = [
   ["minute", 60],
 ];
 
+/** "hace 5 minutos", "ayer", "ahora"… */
 export function timeAgo(isoDate, now = Date.now()) {
   const seconds = Math.round((new Date(isoDate).getTime() - now) / 1000);
   for (const [unit, size] of UNITS) {
