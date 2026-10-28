@@ -1,20 +1,12 @@
-# Blueprint de Render: crea la app y la base de datos con un clic.
-# https://render.com/docs/blueprint-spec
-#
-# IMPORTANTE: `plan: free` es explícito en ambos recursos. Si se omite,
-# Render usa por defecto planes de pago.
-
 services:
   - type: web
     name: gateter
     runtime: docker
     plan: free
-    region: virginia            # la región disponible más cercana a Colombia
+    region: virginia           
     dockerfilePath: ./Dockerfile.render
     dockerContext: .
     healthCheckPath: /api/health/
-    # CD: Render solo despliega un commit de main cuando TODOS los checks
-    # del CI en GitHub (lint, tests, build de imágenes) han pasado.
     autoDeployTrigger: checksPass
     envVars:
       - key: DATABASE_URL
@@ -22,16 +14,16 @@ services:
           name: gateter-db
           property: connectionString
       - key: DJANGO_SECRET_KEY
-        generateValue: true     # Render genera una clave aleatoria segura
+        generateValue: true    
       - key: DJANGO_SECURE_COOKIES
-        value: "1"              # Render sirve todo por HTTPS
+        value: "1"              
       - key: GUNICORN_WORKERS
-        value: "2"              # la instancia free tiene 512 MB de RAM
+        value: "2"             
 
 databases:
   - name: gateter-db
     plan: free
     region: virginia
-    postgresMajorVersion: "16"  # misma versión que docker-compose.yml
+    postgresMajorVersion: "16"  
     databaseName: gateter
     user: gateter

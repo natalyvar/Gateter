@@ -1,5 +1,3 @@
-"""Consultas de lectura sobre usuarios (capa de 'selectors')."""
-
 from django.db.models import BooleanField, Case, Count, QuerySet, Value, When
 from django.db.models.functions import Lower
 
